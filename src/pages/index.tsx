@@ -148,43 +148,48 @@ export default function Checkin() {
 					<Logo />
 					<div className='h-full bg-slate-600 my-6 rounded-3xl'>
 						<div className='py-12 px-4'>
-							{selectedCheckin ? (
-								<>
-									<h1 className='text-white text-xl font-light'>About this Check-In</h1>
-									<p className='text-white mt-8'>MESSAGE:</p>
-									<p className='text-white text-2xl'>{selectedCheckin.message}</p>
-									<p className='text-white mt-4'>FROM:</p>
-									<p className='text-white text-xl font-light'>
-										{selectedCheckin.latitude}, {selectedCheckin.longitude}
-									</p>
-									<p className='text-white mt-4'>AT:</p>
-									<p className='text-white text-xl font-light'>
-										{convertDate(selectedCheckin.createdAt)}
-									</p>
-								</>
-							) : (
-								<>
-									<p className='text-white font-light text-xl'>
-										Welcome to our demo app, where you can mint an NFT that is tied to your location
-										- a &quot;Proof of Presence Claim&quot;. This demo app uses the proto API to
-										bring you this experience. We&apos;ve geofenced this minting process. Only users
-										in the US and India can mint it. After minting your NFT, you&apos;ll be directed
-										to a page where you can view all the Proof of Presence claims that have been
-										minted on a map. You&apos;ll also see some of our internal check-ins done by our
-										team, so you can get a feel for how the app works.
-									</p>
-									<p className='text-white mt-6 font-light'>NOTE:</p>
+							{
+								selectedCheckin ? (
+									<>
+										<h1 className='text-white text-xl font-light'>About this Check-In</h1>
+										<p className='text-white mt-8'>MESSAGE:</p>
+										<p className='text-white text-2xl'>{selectedCheckin.message}</p>
+										<p className='text-white mt-4'>FROM:</p>
+										<p className='text-white text-xl font-light'>
+											{selectedCheckin.latitude}, {selectedCheckin.longitude}
+										</p>
+										<p className='text-white mt-4'>AT:</p>
+										<p className='text-white text-xl font-light'>
+											{convertDate(selectedCheckin.createdAt)}
+										</p>
+										<p className='text-white mt-4'>WALLET ADDRESS:</p>
+										<p className='text-white text-xs font-light w-6'>
+											{selectedCheckin.user_wallet_address}
+										</p>
+									</>
+								) : null
+								// <>
+								// 	<p className='text-white font-light text-xl'>
+								// 		Welcome to our demo app, where you can mint an NFT that is tied to your location
+								// 		- a &quot;Proof of Presence Claim&quot;. This demo app uses the proto API to
+								// 		bring you this experience. We&apos;ve geofenced this minting process. Only users
+								// 		in the US and India can mint it. After minting your NFT, you&apos;ll be directed
+								// 		to a page where you can view all the Proof of Presence claims that have been
+								// 		minted on a map. You&apos;ll also see some of our internal check-ins done by our
+								// 		team, so you can get a feel for how the app works.
+								// 	</p>
+								// 	<p className='text-white mt-6 font-light'>NOTE:</p>
 
-									<p className='text-gray-200 font-extralight'>
-										1. These are only &quot;Claims for Proof of Location&quot;; and not verified
-										Check-In&apos;s. Verified Check-In&apos;s for Mobile Devices will be live in Q3.
-									</p>
-									<p className='text-gray-200 font-extralight'>
-										2. Your location data will only be used for minting the &quot;Proof of
-										Presence&quot; NFT and populating the map in this demo.
-									</p>
-								</>
-							)}
+								// 	<p className='text-gray-200 font-extralight'>
+								// 		1. These are only &quot;Claims for Proof of Location&quot;; and not verified
+								// 		Check-In&apos;s. Verified Check-In&apos;s for Mobile Devices will be live in Q3.
+								// 	</p>
+								// 	<p className='text-gray-200 font-extralight'>
+								// 		2. Your location data will only be used for minting the &quot;Proof of
+								// 		Presence&quot; NFT and populating the map in this demo.
+								// 	</p>
+								// </>
+							}
 						</div>
 					</div>
 					{stage === 1 &&
