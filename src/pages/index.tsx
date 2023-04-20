@@ -187,17 +187,18 @@ export default function Checkin() {
 							)}
 						</div>
 					</div>
-					{!wallet.connected ? (
-						<WalletConnectBtn />
-					) : (
-						<button
-							className={`bg-[#14aede] hover:bg-[#0f95c2] active:bg-[#0b7a99] py-4 rounded-xl text-white text-xl font-semibold transition-all duration-200 transform active:scale-105 
-							 disabled:cursor-not-allowed`}
-							onClick={handleClick}
-							disabled={isLoading}>
-							{isLoading ? <span>Loading...</span> : <span>Mint</span>}
-						</button>
-					)}
+					{stage === 1 &&
+						(!wallet.connected ? (
+							<WalletConnectBtn />
+						) : (
+							<button
+								className={`bg-[#14aede] hover:bg-[#0f95c2] active:bg-[#0b7a99] py-4 rounded-xl text-white text-xl font-semibold transition-all duration-200 transform active:scale-105 
+      disabled:cursor-not-allowed`}
+								onClick={handleClick}
+								disabled={isLoading}>
+								{isLoading ? <span>Loading...</span> : <span>Mint</span>}
+							</button>
+						))}
 				</div>
 				<div className='h-full my-auto rounded-3xl flex-grow overflow-hidden'>
 					<Map checkins={checkins} />
