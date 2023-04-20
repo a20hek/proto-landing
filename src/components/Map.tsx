@@ -4,6 +4,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { Checkin } from '@/interfaces/Checkin';
 import { useAtom } from 'jotai';
 import { selectedCheckinAtom } from '@/context/selectedCheckin';
+import { stageAtom } from '@/context/stage';
 
 interface CheckinsProp {
 	checkins: Checkin[];
@@ -18,8 +19,11 @@ export default function Map({ checkins }: CheckinsProp) {
 	const [lat, setLat] = useState(12.9716);
 	const [zoom, setZoom] = useState(9);
 	const [, setSelectedCheckin] = useAtom(selectedCheckinAtom);
+	const [stage] = useAtom(stageAtom);
 
 	function addCheckinMarkers() {
+		// Only add markers when stage is 2
+		if (stage !== 2) return;
 		if (!map.current) return;
 		checkins.forEach((checkin) => {
 			const marker = new mapboxgl.Marker()
@@ -67,10 +71,6 @@ export default function Map({ checkins }: CheckinsProp) {
 	});
 
 	useEffect(() => {
-		addCheckinMarkers();
-	}, [checkins]);
-
-	useEffect(() => {
 		if (!map.current) return;
 		map.current.on('move', () => {
 			if (map.current) {
@@ -80,6 +80,25 @@ export default function Map({ checkins }: CheckinsProp) {
 			}
 		});
 	});
+
+	useEffect(() => {
+		if (!map.current) return;
+		if (stage === 1) {
+			map.current.flyTo({
+				center: [lng, lat],
+				zoom: 9,
+				essential: true,
+			});
+		} else if (stage === 2) {
+			map.current.flyTo({
+				center: [78.9629, 20.5937], // India's approximate geographical center
+				zoom: 4,
+				essential: true,
+				duration: 3000,
+			});
+			addCheckinMarkers();
+		}
+	}, [stage]);
 
 	return (
 		<div className='w-full h-full'>

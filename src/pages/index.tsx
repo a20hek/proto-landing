@@ -11,6 +11,8 @@ import { initializeContract } from '@/utils/contractCall';
 import { parseReverseGeo } from '@/utils/parseReverseGeo';
 import { convertDate, getCurrentTimestamp } from '@/utils/timeUtils';
 import { updatePlanNFT } from '@/utils/nftDB';
+import axios from 'axios';
+import { stageAtom } from '@/context/stage';
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_REACT_MAPBOX_ACCESS_TOKEN!;
 
@@ -18,32 +20,69 @@ export default function Checkin() {
 	const [latitude, setLatitude] = useState<number>(0);
 	const [longitude, setLongitude] = useState<number>(0);
 	const [placeName, setPlaceName] = useState<string>('');
+	const [isLoading, setIsLoading] = useState<boolean>(false);
 	const [selectedCheckin] = useAtom(selectedCheckinAtom);
 	const wallet = useWallet();
+	const [stage, setStage] = useAtom(stageAtom);
 
 	async function handleClick() {
 		try {
-			if (!wallet || !wallet.publicKey) {
-				throw new Error('Wallet or wallet.publicKey is null');
-			}
-			const sig = await initializeContract(wallet.publicKey);
-			console.log('Transaction Signature:', sig);
+			// setIsLoading(true);
+			// let pdl;
+			// if (longitude > 0) {
+			// 	pdl = 'DebYXwR1ZfhhAdnovnnzZEv8aJSQKg5Gb7HnKrK8spYx';
+			// }
+			// if (longitude < 0) {
+			// 	pdl = '84UE82tmRPyMxJU9taGhBeeTJfv3YJLu5rBiPysyKteG';
+			// }
+			// const checkInPayload = {
+			// 	user_wallet_address: wallet.publicKey?.toBase58() || '',
+			// 	message: 'Minted the ProtoNFT!',
+			// 	latitude: latitude,
+			// 	longitude: longitude,
+			// 	pdl: pdl,
+			// 	caller: '5C1k9yV7y4CjMnKv8eGYDgWND8P89Pdfj79Trk2qmfGo',
+			// 	choice: 1,
+			// };
+
+			// const checkInData = JSON.stringify(checkInPayload);
+
+			// const config = {
+			// 	method: 'post',
+			// 	maxBodyLength: Infinity,
+			// 	url: 'https://tef0kt92x3.execute-api.us-east-1.amazonaws.com/dev/v1/checkin',
+			// 	headers: {
+			// 		accept: 'application/json',
+			// 		'Content-Type': 'application/json',
+			// 	},
+			// 	data: checkInData,
+			// };
+
+			// const response = await axios.request(config);
+
+			// if (response.data.checkinData === true) {
+			// 	if (!wallet || !wallet.publicKey) {
+			// 		throw new Error('Wallet or wallet.publicKey is null');
+			// 	}
+			// 	const { sig, nft_mint } = await initializeContract(wallet.publicKey);
+			// 	console.log('Transaction Signature:', sig);
+			// 	const timestamp = getCurrentTimestamp();
+			// 	const payload = {
+			// 		claimaddress: wallet.publicKey?.toBase58() || '',
+			// 		timestamp: timestamp,
+			// 		latlong: `${latitude}, ${longitude}`,
+			// 		place: placeName,
+			// 		address: nft_mint.toBase58(),
+			// 	};
+
+			// 	await updatePlanNFT(payload);
+			// 	setIsLoading(false);
+			setStage(2);
+			// }
 		} catch (error) {
+			setIsLoading(false);
 			console.error(error);
 		}
-	}
-
-	async function handleClickAPI() {
-		const timestamp = getCurrentTimestamp();
-		const payload = {
-			claimaddress: wallet.publicKey?.toBase58() || '',
-			timestamp: timestamp,
-			latlong: `${latitude}, ${longitude}`,
-			place: placeName,
-			address: 'HELLOWORLD',
-		};
-
-		await updatePlanNFT(payload);
 	}
 
 	const handleSuccess = useCallback((position: GeolocationPosition) => {
@@ -152,9 +191,11 @@ export default function Checkin() {
 						<WalletConnectBtn />
 					) : (
 						<button
-							className='bg-[#14aede] hover:bg-[#0f95c2] active:bg-[#0b7a99] py-4 rounded-xl text-white text-xl font-semibold transition-all duration-200 transform active:scale-105'
-							onClick={handleClick}>
-							Mint
+							className={`bg-[#14aede] hover:bg-[#0f95c2] active:bg-[#0b7a99] py-4 rounded-xl text-white text-xl font-semibold transition-all duration-200 transform active:scale-105 
+							 disabled:cursor-not-allowed`}
+							onClick={handleClick}
+							disabled={isLoading}>
+							{isLoading ? <span>Loading...</span> : <span>Mint</span>}
 						</button>
 					)}
 				</div>

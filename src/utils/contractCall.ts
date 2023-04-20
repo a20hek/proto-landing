@@ -36,12 +36,12 @@ export const initializeContract = async (publicKey: PublicKey) => {
 		);
 
 		let [nft_data, vPDA1] = await PublicKey.findProgramAddress(
-			[Buffer.from('nft-data'), publicKey.toBuffer()],
+			[Buffer.from('nft-data'), provider.wallet.publicKey.toBuffer()],
 			program.programId
 		);
 
 		let [nft_mint, vPDA2] = await PublicKey.findProgramAddress(
-			[Buffer.from('nft-mint'), publicKey.toBuffer()],
+			[Buffer.from('nft-mint'), provider.wallet.publicKey.toBuffer()],
 			program.programId
 		);
 
@@ -90,7 +90,7 @@ export const initializeContract = async (publicKey: PublicKey) => {
 			});
 
 		console.log('Transaction Signature:', sig);
-		return sig;
+		return { sig, nft_mint };
 	} catch (error) {
 		console.error(error);
 		throw error;
