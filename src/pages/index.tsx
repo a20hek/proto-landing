@@ -4,57 +4,46 @@ import { Logo } from '@/svgs/Logo';
 import { useWallet } from '@solana/wallet-adapter-react';
 import React, { useEffect, useState, useCallback } from 'react';
 import mapboxgl from 'mapbox-gl';
-import axios from 'axios';
-import {
-	clusterApiUrl,
-	ConfirmOptions,
-	Connection,
-	PublicKey,
-	SystemProgram,
-} from '@solana/web3.js';
-import { utils, Program, AnchorProvider, Idl } from '@project-serum/anchor';
-import rawIdl from '../../idl.json';
-import { MongoClient } from 'mongodb';
 import { Checkin } from '@/interfaces/Checkin';
+import { useAtom } from 'jotai';
+import { selectedCheckinAtom } from '@/context/selectedCheckin';
+import { initializeContract } from '@/utils/contractCall';
+import { parseReverseGeo } from '@/utils/parseReverseGeo';
+import { convertDate, getCurrentTimestamp } from '@/utils/timeUtils';
+import { updatePlanNFT } from '@/utils/nftDB';
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_REACT_MAPBOX_ACCESS_TOKEN!;
 
-const network = 'http://localhost:8899';
-
-const opts: ConfirmOptions = {
-	preflightCommitment: 'processed',
-};
-
-const idl: Idl = rawIdl as Idl;
-
-const getProvider = () => {
-	const connection = new Connection(network, 'confirmed');
-	const provider = new AnchorProvider(connection, window.solana, opts);
-	return provider;
-};
-
-const getProgram = async () => {
-	const provider = getProvider();
-	const programId = new PublicKey(process.env.NEXT_PUBLIC_PROGRAM_ID!);
-	return new Program(idl, programId, provider);
-};
-
 export default function Checkin() {
-	const { connected, publicKey } = useWallet();
 	const [latitude, setLatitude] = useState<number>(0);
 	const [longitude, setLongitude] = useState<number>(0);
 	const [placeName, setPlaceName] = useState<string>('');
+	const [selectedCheckin] = useAtom(selectedCheckinAtom);
+	const wallet = useWallet();
 
-	async function initializeContract() {
+	async function handleClick() {
 		try {
-			const program = await getProgram();
-			const sig = await program.methods.initialize().rpc();
-
+			if (!wallet || !wallet.publicKey) {
+				throw new Error('Wallet or wallet.publicKey is null');
+			}
+			const sig = await initializeContract(wallet.publicKey);
 			console.log('Transaction Signature:', sig);
 		} catch (error) {
 			console.error(error);
-			// throw new Error(error);
 		}
+	}
+
+	async function handleClickAPI() {
+		const timestamp = getCurrentTimestamp();
+		const payload = {
+			claimaddress: wallet.publicKey?.toBase58() || '',
+			timestamp: timestamp,
+			latlong: `${latitude}, ${longitude}`,
+			place: placeName,
+			address: 'HELLOWORLD',
+		};
+
+		await updatePlanNFT(payload);
 	}
 
 	const handleSuccess = useCallback((position: GeolocationPosition) => {
@@ -72,35 +61,8 @@ export default function Checkin() {
 			timeout: 5000,
 			maximumAge: Infinity,
 		};
-
 		navigator.geolocation.getCurrentPosition(handleSuccess, handleError, geoOptions);
 	}, [handleSuccess, handleError]);
-
-	function parseReverseGeo(geoData: any) {
-		var cityName, stateName, countryName, returnStr;
-		if (geoData.context) {
-			geoData.context.forEach((v: any) => {
-				if (v.id.indexOf('place') >= 0) {
-					cityName = v.text;
-				}
-				if (v.id.indexOf('region') >= 0) {
-					stateName = v.text;
-				}
-				if (v.id.indexOf('country') >= 0) {
-					countryName = v.text;
-				}
-			});
-		}
-		if (cityName && stateName && countryName) {
-			returnStr = cityName + ', ' + stateName + ', ' + countryName;
-		} else {
-			returnStr = geoData.place_name;
-		}
-		if (returnStr.length > 32 && cityName && countryName) {
-			returnStr = cityName + ', ' + countryName;
-		}
-		return returnStr;
-	}
 
 	useEffect(() => {
 		const getPlaceName = async (lat: number, lon: number) => {
@@ -127,48 +89,6 @@ export default function Checkin() {
 		});
 	}, [latitude, longitude]);
 
-	const handleClick = async () => {
-		const getCurrentTimestamp = () => {
-			const now = new Date();
-			const hours = String(now.getHours()).padStart(2, '0');
-			const minutes = String(now.getMinutes()).padStart(2, '0');
-			const seconds = String(now.getSeconds()).padStart(2, '0');
-			const day = String(now.getDate()).padStart(2, '0');
-			const month = String(now.getMonth() + 1).padStart(2, '0');
-			const year = String(now.getFullYear()).slice(-2);
-
-			return `${hours}:${minutes}:${seconds}, ${day}.${month}.${year}`;
-		};
-		const timestamp = getCurrentTimestamp();
-		const payload = {
-			claimaddress: publicKey?.toBase58() || '',
-			timestamp: timestamp,
-			latlong: `${latitude}, ${longitude}`,
-			place: placeName,
-			address: 'HELLOWORLD',
-		};
-
-		const data = JSON.stringify(payload);
-
-		let config = {
-			method: 'post',
-			maxBodyLength: Infinity,
-			url: 'https://pdne8k7lki.execute-api.us-east-2.amazonaws.com/dev/updatePlanNFT',
-			headers: {
-				'X-API-Key': 'psaUQHvfxL6YTRzl5SU6h6qbdYseaJPn3iJAkwYV',
-				'Content-Type': 'application/json',
-			},
-			data: data,
-		};
-
-		try {
-			const response = await axios.request(config);
-			console.log(JSON.stringify(response.data));
-		} catch (error) {
-			console.error('Error during minting:', error);
-		}
-	};
-
 	const [checkins, setCheckins] = useState<Checkin[]>([]);
 
 	useEffect(() => {
@@ -187,13 +107,53 @@ export default function Checkin() {
 			<div className='flex h-screen w-screen px-4 py-8 max-w-[1400px] mx-auto'>
 				<div className='flex-col flex w-1/4 mr-6'>
 					<Logo />
-					<div className='h-full bg-slate-600 my-6 rounded-3xl'></div>
-					{!connected ? (
+					<div className='h-full bg-slate-600 my-6 rounded-3xl'>
+						<div className='py-12 px-4'>
+							{selectedCheckin ? (
+								<>
+									<h1 className='text-white text-xl font-light'>About this Check-In</h1>
+									<p className='text-white mt-8'>MESSAGE:</p>
+									<p className='text-white text-2xl'>{selectedCheckin.message}</p>
+									<p className='text-white mt-4'>FROM:</p>
+									<p className='text-white text-xl font-light'>
+										{selectedCheckin.latitude}, {selectedCheckin.longitude}
+									</p>
+									<p className='text-white mt-4'>AT:</p>
+									<p className='text-white text-xl font-light'>
+										{convertDate(selectedCheckin.createdAt)}
+									</p>
+								</>
+							) : (
+								<>
+									<p className='text-white font-light text-xl'>
+										Welcome to our demo app, where you can mint an NFT that is tied to your location
+										- a &quot;Proof of Presence Claim&quot;. This demo app uses the proto API to
+										bring you this experience. We&apos;ve geofenced this minting process. Only users
+										in the US and India can mint it. After minting your NFT, you&apos;ll be directed
+										to a page where you can view all the Proof of Presence claims that have been
+										minted on a map. You&apos;ll also see some of our internal check-ins done by our
+										team, so you can get a feel for how the app works.
+									</p>
+									<p className='text-white mt-6 font-light'>NOTE:</p>
+
+									<p className='text-gray-200 font-extralight'>
+										1. These are only &quot;Claims for Proof of Location&quot;; and not verified
+										Check-In&apos;s. Verified Check-In&apos;s for Mobile Devices will be live in Q3.
+									</p>
+									<p className='text-gray-200 font-extralight'>
+										2. Your location data will only be used for minting the &quot;Proof of
+										Presence&quot; NFT and populating the map in this demo.
+									</p>
+								</>
+							)}
+						</div>
+					</div>
+					{!wallet.connected ? (
 						<WalletConnectBtn />
 					) : (
 						<button
 							className='bg-[#14aede] hover:bg-[#0f95c2] active:bg-[#0b7a99] py-4 rounded-xl text-white text-xl font-semibold transition-all duration-200 transform active:scale-105'
-							onClick={initializeContract}>
+							onClick={handleClick}>
 							Mint
 						</button>
 					)}

@@ -2,6 +2,8 @@ import React, { useRef, useEffect, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Checkin } from '@/interfaces/Checkin';
+import { useAtom } from 'jotai';
+import { selectedCheckinAtom } from '@/context/selectedCheckin';
 
 interface CheckinsProp {
 	checkins: Checkin[];
@@ -15,6 +17,7 @@ export default function Map({ checkins }: CheckinsProp) {
 	const [lng, setLng] = useState(77.5946);
 	const [lat, setLat] = useState(12.9716);
 	const [zoom, setZoom] = useState(9);
+	const [, setSelectedCheckin] = useAtom(selectedCheckinAtom);
 
 	function addCheckinMarkers() {
 		if (!map.current) return;
@@ -22,6 +25,16 @@ export default function Map({ checkins }: CheckinsProp) {
 			const marker = new mapboxgl.Marker()
 				.setLngLat([checkin.longitude, checkin.latitude])
 				.addTo(map.current!);
+
+			marker.getElement().addEventListener('click', (event) => {
+				event.stopPropagation(); // Stop the event from propagating to the map
+				setSelectedCheckin(checkin);
+				map.current!.flyTo({
+					center: [checkin.longitude, checkin.latitude],
+					essential: true,
+					zoom: 14,
+				});
+			});
 		});
 	}
 
@@ -46,7 +59,16 @@ export default function Map({ checkins }: CheckinsProp) {
 		map.current.on('load', () => {
 			geolocate.trigger();
 		});
+
+		// Add a click event listener to the map
+		map.current.on('click', () => {
+			setSelectedCheckin(null);
+		});
 	});
+
+	useEffect(() => {
+		addCheckinMarkers();
+	}, [checkins]);
 
 	useEffect(() => {
 		if (!map.current) return;
@@ -58,10 +80,6 @@ export default function Map({ checkins }: CheckinsProp) {
 			}
 		});
 	});
-
-	useEffect(() => {
-		addCheckinMarkers();
-	}, [checkins]);
 
 	return (
 		<div className='w-full h-full'>

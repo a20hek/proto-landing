@@ -4,6 +4,6 @@ export interface Checkin {
 	h3index: string;
 	latitude: number;
 	longitude: number;
-	createdAt: Date;
+	createdAt: string;
 	message: string;
 }
