@@ -4,14 +4,58 @@ import { Logo } from '@/svgs/Logo';
 import { useWallet } from '@solana/wallet-adapter-react';
 import React, { useEffect, useState, useCallback } from 'react';
 import mapboxgl from 'mapbox-gl';
+import axios from 'axios';
+import {
+	clusterApiUrl,
+	ConfirmOptions,
+	Connection,
+	PublicKey,
+	SystemProgram,
+} from '@solana/web3.js';
+import { utils, Program, AnchorProvider, Idl } from '@project-serum/anchor';
+import rawIdl from '../../idl.json';
+import { MongoClient } from 'mongodb';
+import { Checkin } from '@/interfaces/Checkin';
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_REACT_MAPBOX_ACCESS_TOKEN!;
+
+const network = 'http://localhost:8899';
+
+const opts: ConfirmOptions = {
+	preflightCommitment: 'processed',
+};
+
+const idl: Idl = rawIdl as Idl;
+
+const getProvider = () => {
+	const connection = new Connection(network, 'confirmed');
+	const provider = new AnchorProvider(connection, window.solana, opts);
+	return provider;
+};
+
+const getProgram = async () => {
+	const provider = getProvider();
+	const programId = new PublicKey(process.env.NEXT_PUBLIC_PROGRAM_ID!);
+	return new Program(idl, programId, provider);
+};
 
 export default function Checkin() {
 	const { connected, publicKey } = useWallet();
 	const [latitude, setLatitude] = useState<number>(0);
 	const [longitude, setLongitude] = useState<number>(0);
 	const [placeName, setPlaceName] = useState<string>('');
+
+	async function initializeContract() {
+		try {
+			const program = await getProgram();
+			const sig = await program.methods.initialize().rpc();
+
+			console.log('Transaction Signature:', sig);
+		} catch (error) {
+			console.error(error);
+			// throw new Error(error);
+		}
+	}
 
 	const handleSuccess = useCallback((position: GeolocationPosition) => {
 		setLatitude(Math.round((position.coords.latitude + Number.EPSILON) * 10000) / 10000);
@@ -99,31 +143,44 @@ export default function Checkin() {
 		const payload = {
 			claimaddress: publicKey?.toBase58() || '',
 			timestamp: timestamp,
-			latlong: { latitude, longitude },
+			latlong: `${latitude}, ${longitude}`,
 			place: placeName,
 			address: 'HELLOWORLD',
 		};
 
-		const requestOptions = {
-			method: 'POST',
+		const data = JSON.stringify(payload);
+
+		let config = {
+			method: 'post',
+			maxBodyLength: Infinity,
+			url: 'https://pdne8k7lki.execute-api.us-east-2.amazonaws.com/dev/updatePlanNFT',
 			headers: {
 				'X-API-Key': 'psaUQHvfxL6YTRzl5SU6h6qbdYseaJPn3iJAkwYV',
 				'Content-Type': 'application/json',
 			},
-			body: JSON.stringify(payload),
+			data: data,
 		};
 
 		try {
-			const response = await fetch(
-				'https://pdne8k7lki.execute-api.us-east-2.amazonaws.com/dev/updatePlanNFT',
-				requestOptions
-			);
-			const data = await response.json();
-			console.log(data);
+			const response = await axios.request(config);
+			console.log(JSON.stringify(response.data));
 		} catch (error) {
-			console.error('Error fetching data:', error);
+			console.error('Error during minting:', error);
 		}
 	};
+
+	const [checkins, setCheckins] = useState<Checkin[]>([]);
+
+	useEffect(() => {
+		const fetchCheckins = async () => {
+			const res = await fetch('/api/checkins');
+			const data = await res.json();
+			setCheckins(data);
+		};
+
+		fetchCheckins();
+		console.log(checkins);
+	}, []);
 
 	return (
 		<>
@@ -136,13 +193,13 @@ export default function Checkin() {
 					) : (
 						<button
 							className='bg-[#14aede] hover:bg-[#0f95c2] active:bg-[#0b7a99] py-4 rounded-xl text-white text-xl font-semibold transition-all duration-200 transform active:scale-105'
-							onClick={handleClick}>
+							onClick={initializeContract}>
 							Mint
 						</button>
 					)}
 				</div>
 				<div className='h-full my-auto rounded-3xl flex-grow overflow-hidden'>
-					<Map />
+					<Map checkins={checkins} />
 				</div>
 			</div>
 		</>

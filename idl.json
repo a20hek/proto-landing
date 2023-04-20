@@ -1,0 +1,107 @@
+{
+	"version": "0.1.0",
+	"name": "proto_nft_contract",
+	"instructions": [
+		{
+			"name": "initialize",
+			"accounts": [],
+			"args": []
+		},
+		{
+			"name": "nftMint",
+			"accounts": [
+				{
+					"name": "authority",
+					"isMut": true,
+					"isSigner": true
+				},
+				{
+					"name": "dataAccount",
+					"isMut": true,
+					"isSigner": false
+				},
+				{
+					"name": "nftMint",
+					"isMut": true,
+					"isSigner": false
+				},
+				{
+					"name": "receiverAta",
+					"isMut": true,
+					"isSigner": false
+				},
+				{
+					"name": "mplProgram",
+					"isMut": false,
+					"isSigner": false
+				},
+				{
+					"name": "nftMetadata",
+					"isMut": true,
+					"isSigner": false
+				},
+				{
+					"name": "nftMasterEdition",
+					"isMut": true,
+					"isSigner": false
+				},
+				{
+					"name": "associatedTokenProgram",
+					"isMut": false,
+					"isSigner": false
+				},
+				{
+					"name": "tokenProgram",
+					"isMut": false,
+					"isSigner": false
+				},
+				{
+					"name": "systemProgram",
+					"isMut": false,
+					"isSigner": false
+				},
+				{
+					"name": "rent",
+					"isMut": false,
+					"isSigner": false
+				}
+			],
+			"args": []
+		}
+	],
+	"accounts": [
+		{
+			"name": "DataAccount",
+			"type": {
+				"kind": "struct",
+				"fields": [
+					{
+						"name": "owner",
+						"type": "publicKey"
+					},
+					{
+						"name": "bump",
+						"type": "u8"
+					}
+				]
+			}
+		}
+	],
+	"errors": [
+		{
+			"code": 6000,
+			"name": "IllegalOrgInput",
+			"msg": "Illegal Org Input"
+		},
+		{
+			"code": 6001,
+			"name": "IllegalProjInput",
+			"msg": "Illegal Project Input"
+		},
+		{
+			"code": 6002,
+			"name": "IllegalNFTIndex",
+			"msg": "Illegal NFT Index"
+		}
+	]
+}
